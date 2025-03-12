@@ -20,6 +20,14 @@ class Program
          new MySqlServerVersion(new Version(8,0,41))));
         }).Build();
 
-        Console.WriteLine("Database configuration is set up");
+        Console.WriteLine("welcome to our ATM system please Login to use our ATM \n");
+        Console.WriteLine("enter your login \n");
+        string login=Console.ReadLine();
+
+         Console.WriteLine("enter your pincode\n");
+        string pinCode=Console.ReadLine();
+
+
+        Console.WriteLine($"{login},{pinCode}");
     }
 }
