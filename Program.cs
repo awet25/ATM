@@ -3,10 +3,14 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using ATMApp.Data;
 using Microsoft.Extensions.Hosting;
+using FluentValidation.AspNetCore;
 using ATMApp.Interfaces;
 using ATMApp.Services;
 using ATMApp.Repositories;
 using System.Threading.Tasks;
+using ATMApp.DTOs;
+using ATMApp.Validators;
+using FluentValidation;
 
 
 class Program
@@ -23,17 +27,16 @@ class Program
          new MySqlServerVersion(new Version(8,0,41))));
          service.AddScoped<IAuthService,AuthService>();
          service.AddScoped<IUserRepository,UserRepository>();
+         service.AddValidatorsFromAssemblyContaining<UserLoginValidator>();
         }).Build();
      
 
 
 
-
-
-        var UserRepository = builder.Services.GetService<IUserRepository>();
-        var authService=builder.Services.GetService<IAuthService>();
-
-        Console.WriteLine("welcome to our ATM system please Login to use our ATM");
+        using(var scope=builder.Services.CreateScope()){
+            var serviceProvider=scope.ServiceProvider;
+            var  authService=serviceProvider.GetRequiredService<IAuthService>();
+             Console.WriteLine("welcome to our ATM system please Login to use our ATM");
         Console.Write("enter your login: ");
 
          //add this to check for extra characters
@@ -48,8 +51,13 @@ class Program
 
        string pinCode=Console.ReadLine();
 
-       Console.WriteLine($"{login},{pinCode}");
-        bool isAuthenticated= await authService.Login(login, pinCode);
+
+        var userLoginDto= new UserLoginDTO{
+            Login=login,
+            PinCode=pinCode
+        };         
+
+        bool isAuthenticated= await authService.Login(userLoginDto);
         if(isAuthenticated)
         {
             Console.WriteLine("welcome to our atm");
@@ -57,6 +65,11 @@ class Program
 else{
     Console.WriteLine("Exiting the system....");
 }
+        }
+
+       
+
+       
 
        Console.ReadLine();
     }
