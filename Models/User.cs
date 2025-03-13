@@ -7,8 +7,6 @@ public class User{
     public string HolderName {get; set;}=string.Empty;
     public string Login {get; set;}=string.Empty;
     public string PinCode {get; set;}=string.Empty;
-    public Decimal Balance {get; set;}=0.0m;
-    public string Status{get; set;}=string.Empty;
     public UserRole Role{get; set;}
     
 }

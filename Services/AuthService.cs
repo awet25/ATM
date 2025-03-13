@@ -1,30 +1,38 @@
+using ATMApp.DTOs;
 using ATMApp.Interfaces;
 using ATMApp.Repositories;
+using ATMApp.Validators;
+using FluentValidation;
 
 namespace ATMApp.Services
 {
     public class AuthService : IAuthService
     {
      private readonly IUserRepository _userRepository;
-     public AuthService(IUserRepository UserRepository)
+     private readonly IValidator<UserLoginDTO> _validator;
+     public AuthService(IUserRepository UserRepository, IValidator<UserLoginDTO> validator)
      {
         _userRepository= UserRepository;
+        _validator= validator;
      }
     
-     public async Task<bool>Login(string Login,string PinCode) 
+     public async Task<bool>Login(UserLoginDTO userLogin) 
      {
-        if (Login.Length!=5){
-            Console.WriteLine("sorry password length must be 5");
-            return false;
-        }
-        if(string.IsNullOrEmpty(Login)){
-            Console.WriteLine("please Enter Login");
-            return false;
 
+        var validationResult=_validator.Validate(userLogin);
+        if (!validationResult.IsValid)
+        {
+            foreach(var error in validationResult.Errors)
+            {
+                Console.WriteLine(error.ErrorMessage);
+            }
+            return false;
         }
+
+       
             
-       var user =await _userRepository.GetUserBylogin(Login);
-       if(user!=null && user.PinCode==PinCode){
+       var user =await _userRepository.GetUserBylogin(userLogin.Login);
+       if(user!=null && user.PinCode==userLogin.PinCode){
         Console.WriteLine($"Login successFul. Welcome {user.HolderName}");
         return true;
        }
