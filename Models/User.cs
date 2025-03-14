@@ -7,13 +7,13 @@ public class User{
     public string HolderName {get; set;}=string.Empty;
     public string Login {get; set;}=string.Empty;
     public string PinCode {get; set;}=string.Empty;
-    public UserRole Role{get; set;}
+    public UserRole Role{get; set;}=UserRole.Client;
     
 }
 
 public enum UserRole
 {
-    Customer,
+    Client,
     Admin
 }
 }

@@ -28,6 +28,7 @@ class Program
          service.AddScoped<IAuthService,AuthService>();
          service.AddScoped<IUserRepository,UserRepository>();
          service.AddValidatorsFromAssemblyContaining<UserLoginValidator>();
+         service.AddScoped<IAdminservices,AdminServices>();
         }).Build();
      
 

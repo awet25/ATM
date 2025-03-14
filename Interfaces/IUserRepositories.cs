@@ -1,3 +1,4 @@
+using ATMApp.DTOs;
 using ATMApp.Models;
 
 namespace ATMApp.Repositories
@@ -5,6 +6,7 @@ namespace ATMApp.Repositories
     public interface IUserRepository
     {
         Task<User> GetUserBylogin(string login);
-        Task AddUser(User user);
+        
+        Task AddUser(User newUser);
     }
 }
