@@ -1,9 +1,10 @@
 using FluentValidation;
 using ATMApp.Models;
+using ATMApp.DTOs;
 
 namespace ATMApp.Validators
 {
-    public class UserLoginValidator : AbstractValidator<User>
+    public class UserLoginValidator : AbstractValidator<UserLoginDTO>
     {
         public UserLoginValidator()
         {
