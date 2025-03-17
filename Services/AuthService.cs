@@ -1,5 +1,6 @@
 using ATMApp.DTOs;
 using ATMApp.Interfaces;
+using ATMApp.Models;
 using ATMApp.Repositories;
 using ATMApp.Validators;
 using FluentValidation;
@@ -16,7 +17,7 @@ namespace ATMApp.Services
         _validator= validator;
      }
     
-     public async Task<bool>Login(UserLoginDTO userLogin) 
+     public async Task<User>Login(UserLoginDTO userLogin) 
      {
 
         var validationResult=_validator.Validate(userLogin);
@@ -26,7 +27,7 @@ namespace ATMApp.Services
             {
                 Console.WriteLine(error.ErrorMessage);
             }
-            return false;
+            return null;
         }
 
        
@@ -34,16 +35,14 @@ namespace ATMApp.Services
        var user =await _userRepository.GetUserBylogin(userLogin.Login);
        if(user!=null && user.PinCode==userLogin.PinCode){
         Console.WriteLine($"Login successFul. Welcome {user.HolderName}");
-        return true;
+        return user;
        }
        Console.WriteLine("Invalid login credentials.");
-       return false;
+       return null;
      }
      public void Exit(){
         Console.WriteLine("User Logged out.");
      }
-
-        
 
         
     }

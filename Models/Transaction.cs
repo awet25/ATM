@@ -9,6 +9,7 @@ namespace ATMApp.Models
      public decimal Amount { get; set; }
      public DateTime TimeStamp {get; set; }=DateTime.UtcNow;
      public TransactionType type { get; set; }
+     public Account Account { get; set; } 
     }
 
     public enum TransactionType

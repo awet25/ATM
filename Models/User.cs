@@ -8,6 +8,7 @@ public class User{
     public string Login {get; set;}=string.Empty;
     public string PinCode {get; set;}=string.Empty;
     public UserRole Role{get; set;}=UserRole.Client;
+    public Account? Account{get; set;}
     
 }
 

@@ -3,16 +3,23 @@ using ATMApp.DTOs;
 using ATMApp.Interfaces;
 using ATMApp.Repositories;
 using FluentValidation;
+using Org.BouncyCastle.Asn1.X509;
+using ATMApp.Data;
+using System.Diagnostics;
 
 namespace ATMApp.Services
 {
 public class AdminServices:IAdminservices
 {
     private readonly IUserRepository _userRepository;
+    private readonly ATMContext _context;
+    private readonly IAccountRepository _accountRepository;
     private readonly IValidator<CreateUserDto> _userValidator;
-    public AdminServices(IUserRepository userRepository, IValidator<CreateUserDto> userValidator){
+    public AdminServices(ATMContext aTMContext, IUserRepository userRepository,IAccountRepository accountRepository ,IValidator<CreateUserDto> userValidator){
+        _context=aTMContext;
         _userRepository = userRepository;
         _userValidator = userValidator;
+        _accountRepository=accountRepository;
     }
 
    public async Task<bool> AddUser(CreateUserDto userDto){
@@ -35,12 +42,103 @@ public class AdminServices:IAdminservices
      PinCode=userDto.PinCode,
      Role=userDto.Role,
     };
-    await _userRepository.AddUser(newUser);
+    var createdUser = await _userRepository.AddUser(newUser);
+   if(createdUser==null)
+   {
+    Console.WriteLine("Failed to create User");
+   }
+   if (createdUser.Role== UserRole.Client){
+      var account=new Account{
+    ClientID=createdUser.Id,
+   status=AccountStatus.Active,
+   IntialBalance=0.0m
+    
+   };
+     var createdAccount= await _accountRepository.CreateAccount(account);
+   if( createdAccount==null){
+    Console.WriteLine("sorry Account wasn't created");
+    return false;
+   }
+     
     Console.WriteLine($"user : {newUser.HolderName} successfully created with {newUser.Role}");
     return true;
    }
+ return false;
+ 
+   }
 
-}
+        public async Task<bool> DeleteUserAndAccount(int userId)
+        {
+         using var transaction= await _context.Database.BeginTransactionAsync();
+         try{
+          var user= await _userRepository.GetUserById(userId);
+          if (user==null)
+          {
+            Console.WriteLine($"User {userId} does not exist");
+            return false;
+          }
+          var account= await _accountRepository.GetAccountById(userId);
+          if(account!=null){
+            var accountDeleted=await _accountRepository.DeleteAccountById(userId);
+            if(!accountDeleted){
+              Console.WriteLine("Failed to delete account.");
+              return false;
+            }
+          }
+          var userDeleted=await _userRepository.DeleteUserbyId(userId);
+          if(!userDeleted){
+            Console.WriteLine("Failed to delete User");
+            return false;
+          }
+          await transaction.CommitAsync();
+          Console.WriteLine($"Client {user.HolderName}and their account were successfully deleted.");
+          return true;
+         }
+
+         catch(Exception ex){
+         await transaction.RollbackAsync();
+         Console.WriteLine($"Error: {ex.Message}");
+         return false;
+         }
+        }
+
+        public async Task<bool> UpdateUser(UpdateUserDto updateUserDto)
+        {
+          try{
+            var user= await _userRepository.GetUserById(updateUserDto.Id);
+            if (user==null)
+            {
+              Console.WriteLine("User not found");
+              return false;
+            }
+            if (!string.IsNullOrEmpty(updateUserDto.HolderName)){
+              user.HolderName = updateUserDto.HolderName;
+            }
+             if (!string.IsNullOrEmpty(updateUserDto.Login)){
+              user.Login = updateUserDto.Login;
+            }
+             if (!string.IsNullOrEmpty(updateUserDto.PinCode)){
+              if (updateUserDto.PinCode.Length !=5){
+                  Console.WriteLine("PinCode must be exactly 5 characters long.");
+                return false;
+              }
+              user.PinCode = updateUserDto.PinCode;
+            }
+           var updatedUser= await _userRepository.UpdateUser(user);
+           if (!updatedUser){
+            Console.WriteLine("Failed to Update Client.");
+            return false;
+           }
+           Console.WriteLine($"Client {user.HolderName} was successfully update .");
+           return true;
+           
+          } 
+          catch(Exception ex){
+            Console.WriteLine($"Error updating user:{ex.Message}");
+            return false;
+          } 
+        }
+    }
 
 
 

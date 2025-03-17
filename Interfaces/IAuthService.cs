@@ -1,10 +1,11 @@
 using ATMApp.DTOs;
+using ATMApp.Models;
 
 namespace ATMApp.Interfaces{
 
 public interface IAuthService
 {
-    Task<bool> Login(UserLoginDTO userLogin);
+    Task<User> Login(UserLoginDTO userLogin);
     void Exit();
 }
 
