@@ -11,6 +11,7 @@ using System.Threading.Tasks;
 using ATMApp.DTOs;
 using ATMApp.Validators;
 using FluentValidation;
+using ATMApp.Models;
 
 
 class Program
@@ -27,6 +28,9 @@ class Program
          new MySqlServerVersion(new Version(8,0,41))));
          service.AddScoped<IAuthService,AuthService>();
          service.AddScoped<IUserRepository,UserRepository>();
+         service.AddScoped<IAccountRepository,AccountRepository>();
+         service.AddScoped<ITransactionRepository,TransactionRepository>();
+         service.AddScoped<ITransactionService, TransactionService>();
          service.AddValidatorsFromAssemblyContaining<UserLoginValidator>();
          service.AddScoped<IAdminservices,AdminServices>();
         }).Build();
@@ -58,8 +62,8 @@ class Program
             PinCode=pinCode
         };         
 
-        bool isAuthenticated= await authService.Login(userLoginDto);
-        if(isAuthenticated)
+        User isAuthenticated= await authService.Login(userLoginDto);
+        if(isAuthenticated!=null)
         {
             Console.WriteLine("welcome to our atm");
         }

@@ -12,8 +12,8 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace ATMApp.Migrations
 {
     [DbContext(typeof(ATMContext))]
-    [Migration("20250314170514_createAccountAndTransaction")]
-    partial class createAccountAndTransaction
+    [Migration("20250316222148_createTablesAndRelations")]
+    partial class createTablesAndRelations
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -44,6 +44,9 @@ namespace ATMApp.Migrations
 
                     b.HasKey("Id");
 
+                    b.HasIndex("ClientID")
+                        .IsUnique();
+
                     b.ToTable("Account");
                 });
 
@@ -68,6 +71,8 @@ namespace ATMApp.Migrations
                         .HasColumnType("int");
 
                     b.HasKey("Id");
+
+                    b.HasIndex("AccountId");
 
                     b.ToTable("Transactions");
                 });
@@ -98,6 +103,39 @@ namespace ATMApp.Migrations
                     b.HasKey("Id");
 
                     b.ToTable("User");
+                });
+
+            modelBuilder.Entity("ATMApp.Models.Account", b =>
+                {
+                    b.HasOne("ATMApp.Models.User", "User")
+                        .WithOne("Account")
+                        .HasForeignKey("ATMApp.Models.Account", "ClientID")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("User");
+                });
+
+            modelBuilder.Entity("ATMApp.Models.Transaction", b =>
+                {
+                    b.HasOne("ATMApp.Models.Account", "Account")
+                        .WithMany("Transactions")
+                        .HasForeignKey("AccountId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Account");
+                });
+
+            modelBuilder.Entity("ATMApp.Models.Account", b =>
+                {
+                    b.Navigation("Transactions");
+                });
+
+            modelBuilder.Entity("ATMApp.Models.User", b =>
+                {
+                    b.Navigation("Account")
+                        .IsRequired();
                 });
 #pragma warning restore 612, 618
         }
