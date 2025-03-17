@@ -12,6 +12,7 @@ using ATMApp.DTOs;
 using ATMApp.Validators;
 using FluentValidation;
 using ATMApp.Models;
+using ATMApp.Views;
 
 
 class Program
@@ -33,25 +34,25 @@ class Program
          service.AddScoped<ITransactionService, TransactionService>();
          service.AddValidatorsFromAssemblyContaining<UserLoginValidator>();
          service.AddScoped<IAdminservices,AdminServices>();
+         service.AddScoped<AdminView>();
         }).Build();
      
 
 
 
-        using(var scope=builder.Services.CreateScope()){
+            using(var scope=builder.Services.CreateScope()){
             var serviceProvider=scope.ServiceProvider;
             var  authService=serviceProvider.GetRequiredService<IAuthService>();
-             Console.WriteLine("welcome to our ATM system please Login to use our ATM");
-        Console.Write("enter your login: ");
+            var adminView=serviceProvider.GetRequiredService<AdminView>();
+            Console.WriteLine("welcome to our ATM system please Login to use our ATM");
+            Console.Write("enter your login: ");
 
-         //add this to check for extra characters
+         
        
 
         string login=Console.ReadLine();
 
         Console.Write("enter your pincode: ");
-
-      //add this to check for extra characters
        
 
        string pinCode=Console.ReadLine();
@@ -63,12 +64,16 @@ class Program
         };         
 
         User isAuthenticated= await authService.Login(userLoginDto);
-        if(isAuthenticated!=null)
+        if(isAuthenticated.Role==UserRole.Admin)
         {
-            Console.WriteLine("welcome to our atm");
+            Console.WriteLine($"welcome to our ATM Admin {isAuthenticated.HolderName}");
+            await adminView.show();
         }
+else if(isAuthenticated.Role==UserRole.Client){
+    Console.WriteLine($"Welcome client{isAuthenticated.HolderName}");
+}
 else{
-    Console.WriteLine("Exiting the system....");
+    Console.WriteLine("exiting .....");
 }
         }
 

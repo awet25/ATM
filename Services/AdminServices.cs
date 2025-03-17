@@ -3,9 +3,10 @@ using ATMApp.DTOs;
 using ATMApp.Interfaces;
 using ATMApp.Repositories;
 using FluentValidation;
-using Org.BouncyCastle.Asn1.X509;
+
 using ATMApp.Data;
-using System.Diagnostics;
+using Microsoft.EntityFrameworkCore;
+
 
 namespace ATMApp.Services
 {
@@ -21,7 +22,7 @@ public class AdminServices:IAdminservices
         _userValidator = userValidator;
         _accountRepository=accountRepository;
     }
-
+    
    public async Task<bool> AddUser(CreateUserDto userDto){
       var validationResult= _userValidator.Validate(userDto);
       if (!validationResult.IsValid){
@@ -102,10 +103,21 @@ public class AdminServices:IAdminservices
          }
         }
 
+        public async Task<User> GetUserByLogin(string login)
+        {
+         var existingUser=  await _context.User.Include(u=>u.Account)
+         .FirstOrDefaultAsync(u=>u.Login==login);
+    if (existingUser==null){
+        Console.WriteLine("User with this login already exists.");
+        return null;
+    }
+    return existingUser;
+        }
+
         public async Task<bool> UpdateUser(UpdateUserDto updateUserDto)
         {
           try{
-            var user= await _userRepository.GetUserById(updateUserDto.Id);
+            var user= await _userRepository.GetUserById(updateUserDto.ClientId);
             if (user==null)
             {
               Console.WriteLine("User not found");

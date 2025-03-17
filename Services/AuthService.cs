@@ -42,6 +42,7 @@ namespace ATMApp.Services
      }
      public void Exit(){
         Console.WriteLine("User Logged out.");
+        Environment.Exit(0);
      }
 
         

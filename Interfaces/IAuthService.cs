@@ -7,6 +7,7 @@ public interface IAuthService
 {
     Task<User> Login(UserLoginDTO userLogin);
     void Exit();
+    
 }
 
 }
