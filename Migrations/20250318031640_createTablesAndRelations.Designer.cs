@@ -12,7 +12,7 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace ATMApp.Migrations
 {
     [DbContext(typeof(ATMContext))]
-    [Migration("20250316222148_createTablesAndRelations")]
+    [Migration("20250318031640_createTablesAndRelations")]
     partial class createTablesAndRelations
     {
         /// <inheritdoc />
@@ -134,8 +134,7 @@ namespace ATMApp.Migrations
 
             modelBuilder.Entity("ATMApp.Models.User", b =>
                 {
-                    b.Navigation("Account")
-                        .IsRequired();
+                    b.Navigation("Account");
                 });
 #pragma warning restore 612, 618
         }

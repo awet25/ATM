@@ -6,11 +6,11 @@ using System;
 using System.Threading.Tasks;
 namespace ATMApp.Services{
 
-    public class TransactionService : ITransactionService
+    public class ClientService :IClientService
     {
         private readonly ITransactionRepository _transactionRepository;
         private readonly IAccountRepository _accountRepository;
-        public TransactionService(IAccountRepository accountRepository, ITransactionRepository transactionRepository){
+        public ClientService(IAccountRepository accountRepository, ITransactionRepository transactionRepository){
         _accountRepository=accountRepository;
         _transactionRepository=transactionRepository;
 
