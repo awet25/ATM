@@ -1,23 +1,24 @@
 
 
-using System.Threading.Tasks;
+
 using ATMApp.DTOs;
+using ATMApp.Interfaces;
 using ATMApp.Models;
-using ATMApp.Services;
+
 
 namespace ATMApp.Views
 {
 
 public class AdminView
 {
-    private readonly AdminServices _adminServices;
-    private readonly AuthService _authService;
+    private readonly IAdminservices _adminServices;
+    private readonly IAuthService _authService;
 
-    public AdminView(AdminServices adminServices,AuthService authService){
+    public AdminView(IAdminservices adminServices,IAuthService authService){
         _adminServices = adminServices;
         _authService=authService;
     }
-    public async Task show()
+    public async Task Show()
     {
         while (true)
         {
@@ -27,8 +28,8 @@ public class AdminView
                 Console.WriteLine("2 - Delete Existing Account");
                 Console.WriteLine("3 - Update Account info ");
                 Console.WriteLine("4 - Search for Account ");
-                Console.Write("\n 5 - Exit");
-
+                Console.WriteLine("5 - Exit");
+                Console.WriteLine("Enter your choice");
                 int choice;
                 if (!int.TryParse(Console.ReadLine(), out choice))
                 {
@@ -47,7 +48,7 @@ public class AdminView
                         await DeleteAccount();
                         break;
                     case 3:
-                        Console.WriteLine("Follow instruction to updade info");
+                        Console.WriteLine("Follow instruction to updateUser info");
                         await UpdateAccount();
                         break;
                     case 4:
@@ -70,7 +71,7 @@ public class AdminView
 
     public  async Task<bool> CreateUser()
     {
-   CreateUserDto newuser=HandleInputFromUser<CreateUserDto>();
+   CreateUserDto newuser=HandleCreateUserInput();
     return await _adminServices.AddUser(newuser);
     
     }
@@ -85,7 +86,7 @@ public class AdminView
     }
 
 public async Task<bool> UpdateAccount(){
-   UpdateUserDto updateduser=HandleInputFromUser<UpdateUserDto>();
+   UpdateUserDto updateduser=HandleInputToUpudate();
    return await _adminServices.UpdateUser(updateduser);
 }
 public async Task SearchForAccount(){
@@ -114,42 +115,36 @@ public async Task SearchForAccount(){
 public void Exit(){
 _authService.Exit();
 }
-public static T HandleInputFromUser<T>(bool isUpdate=false)where T:BaseDto, new()  {
+public static CreateUserDto HandleCreateUserInput(){
 
-    string login = null, pinCode = null, holderName = null;
-    UserRole? userRole = null; 
-    int clientId=0;
-
-    Console.WriteLine("Enter account Holder Name" + (isUpdate ? " (Leave blank to skip):" : ":"));
+string login, pinCode, holderName;
+    UserRole userRole;
+   
+ Console.Write("Enter account Holder Name: ");
     holderName = Console.ReadLine();
-    while (!isUpdate && string.IsNullOrEmpty(holderName)) // Required for CreateUserDto
+    while (string.IsNullOrEmpty(holderName))
     {
         Console.WriteLine("Holder name is required. Try again:");
         holderName = Console.ReadLine();
     }
 
-    Console.WriteLine("Enter login for account" + (isUpdate ? " (Leave blank to skip):" : ":"));
+    Console.Write("Enter login for account: ");
     login = Console.ReadLine();
-    while (!isUpdate && string.IsNullOrEmpty(login)) // Required for CreateUserDto
+    while (string.IsNullOrEmpty(login))
     {
         Console.WriteLine("Login is required. Try again:");
         login = Console.ReadLine();
     }
 
-    Console.WriteLine("Enter PinCode for account (Must be 5 characters" + (isUpdate ? ", leave blank to skip" : "") + "):");
+    Console.Write("Enter PinCode for account (Must be 5 digits): ");
     pinCode = Console.ReadLine();
-    while (!isUpdate && (string.IsNullOrEmpty(pinCode) || pinCode.Length != 5)) // Required for CreateUserDto
+    while (string.IsNullOrEmpty(pinCode) || pinCode.Length != 5)
     {
-        Console.WriteLine("PinCode is required and must be exactly 5 characters. Try again:");
+        Console.WriteLine("PinCode must be exactly 5 digits. Try again:");
         pinCode = Console.ReadLine();
     }
-    if (isUpdate && !string.IsNullOrEmpty(pinCode) && pinCode.Length != 5)
-    {
-        Console.WriteLine("Invalid PinCode! It must be exactly 5 characters.");
-        pinCode = null;
-    }
 
-    Console.WriteLine("Select Account Role" + (isUpdate ? " (Leave blank to skip)" : ""));
+    Console.WriteLine("Select Account Role:");
     foreach (var role in Enum.GetNames(typeof(UserRole)))
     {
         Console.WriteLine($"- {role}");
@@ -157,36 +152,101 @@ public static T HandleInputFromUser<T>(bool isUpdate=false)where T:BaseDto, new(
 
     Console.Write("Enter role: ");
     string stringRole = Console.ReadLine();
-    if (!string.IsNullOrEmpty(stringRole))
+    while (!Enum.TryParse(stringRole, out UserRole parsedRole) || !Enum.IsDefined(typeof(UserRole), parsedRole))
     {
-        while (!Enum.TryParse(stringRole, out UserRole parsedRole) || !Enum.IsDefined(typeof(UserRole), parsedRole))
-        {
-            Console.WriteLine("Invalid choice. Please select a valid role.");
-            stringRole = Console.ReadLine();
-        }
-        userRole = (UserRole)Enum.Parse(typeof(UserRole), stringRole);
+        Console.WriteLine("Invalid choice. Please select a valid role:");
+        stringRole = Console.ReadLine();
     }
+    userRole = (UserRole)Enum.Parse(typeof(UserRole), stringRole);
 
-    var userDto = new T
+    return new CreateUserDto
     {
-        HolderName = isUpdate && string.IsNullOrEmpty(holderName) ? null : holderName,
-        Login = isUpdate && string.IsNullOrEmpty(login) ? null : login,
-        PinCode = isUpdate && string.IsNullOrEmpty(pinCode) ? null : pinCode,
-        Role =userRole ??default(UserRole) 
+        HolderName = holderName,
+        Login = login,
+        PinCode = pinCode,
+        Role = userRole
     };
+   
 
-    if (isUpdate && userDto is UpdateUserDto updateDto)
+}
+
+
+public static UpdateUserDto HandleInputToUpudate()
+{
+    string login=null,pinCode=null,holderName=null;
+    UserRole? userRole=null;
+    int clientId=0;
+     Console.Write("Enter Client ID to update: ");
+    while (!int.TryParse(Console.ReadLine(), out clientId) || clientId <= 0)
     {
-        Console.WriteLine("Enter Client ID to update:");
-        while (!int.TryParse(Console.ReadLine(), out  clientId) || clientId <= 0)
-        {
-            Console.WriteLine("Invalid ID. Please enter a valid Client ID:");
-        }
-        updateDto.ClientId = clientId;
+        Console.WriteLine("Invalid ID. Please enter a valid Client ID:");
     }
 
-    return userDto;
+    if (AskUserToEdit("Holder Name"))
+    {
+        Console.Write("Enter account Holder Name (Leave blank to keep current): ");
+        holderName = Console.ReadLine();
+    }
 
+    if (AskUserToEdit("Login"))
+    {
+        Console.Write("Enter login for account (Leave blank to keep current): ");
+        login = Console.ReadLine();
+    }
+
+    if (AskUserToEdit("PinCode"))
+    {
+        Console.Write("Enter PinCode for account (Must be 5 characters, leave blank to keep current): ");
+        pinCode = Console.ReadLine();
+
+        while (!string.IsNullOrEmpty(pinCode) && pinCode.Length != 5)
+        {
+            Console.WriteLine("Invalid PinCode! It must be exactly 5 characters. Try again or leave blank:");
+            pinCode = Console.ReadLine();
+        }
+    }
+
+    if (AskUserToEdit("Role"))
+    {
+        Console.WriteLine("Select Account Role (Leave blank to keep current):");
+        foreach (var role in Enum.GetNames(typeof(UserRole)))
+        {
+            Console.WriteLine($"- {role}");
+        }
+
+        Console.Write("Enter role: ");
+        string stringRole = Console.ReadLine();
+        if (!string.IsNullOrEmpty(stringRole))
+        {
+            while (!Enum.TryParse(stringRole, out UserRole parsedRole) || !Enum.IsDefined(typeof(UserRole), parsedRole))
+            {
+                Console.WriteLine("Invalid choice. Please select a valid role:");
+                stringRole = Console.ReadLine();
+            }
+            userRole = (UserRole)Enum.Parse(typeof(UserRole), stringRole);
+        }
+    }
+
+    return new UpdateUserDto
+    {
+        ClientId = clientId,
+        HolderName = string.IsNullOrEmpty(holderName) ? null : holderName,
+        Login = string.IsNullOrEmpty(login) ? null : login,
+        PinCode = string.IsNullOrEmpty(pinCode) ? null : pinCode,
+        Role = userRole ?? default(UserRole)
+    };
+}
+
+
+
+
+
+
+private static bool AskUserToEdit(string field)
+{
+    Console.Write($"Do you want to update {field}? (yes/no): ");
+    string response = Console.ReadLine()?.Trim().ToLower();
+    return response == "yes" || response == "y";
 }
     }
     }

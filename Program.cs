@@ -18,7 +18,7 @@ using ATMApp.Views;
 class Program
 {
     static async Task Main(string[] args)
-    {
+    {   try{
         var builder=Host.CreateDefaultBuilder().ConfigureServices((context,service)=>
         {
       
@@ -31,10 +31,12 @@ class Program
          service.AddScoped<IUserRepository,UserRepository>();
          service.AddScoped<IAccountRepository,AccountRepository>();
          service.AddScoped<ITransactionRepository,TransactionRepository>();
-         service.AddScoped<ITransactionService, TransactionService>();
-         service.AddValidatorsFromAssemblyContaining<UserLoginValidator>();
+         service.AddScoped<IClientService,ClientService>();
+         service.AddValidatorsFromAssemblyContaining<AddNewuserValidator>();
+         service.AddScoped<IValidator<CreateUserDto>,AddNewuserValidator>();
          service.AddScoped<IAdminservices,AdminServices>();
          service.AddScoped<AdminView>();
+         service.AddScoped<ClientView>();
         }).Build();
      
 
@@ -44,6 +46,10 @@ class Program
             var serviceProvider=scope.ServiceProvider;
             var  authService=serviceProvider.GetRequiredService<IAuthService>();
             var adminView=serviceProvider.GetRequiredService<AdminView>();
+            var clientView=serviceProvider.GetRequiredService<ClientView>();
+
+
+            
             Console.WriteLine("welcome to our ATM system please Login to use our ATM");
             Console.Write("enter your login: ");
 
@@ -67,10 +73,11 @@ class Program
         if(isAuthenticated.Role==UserRole.Admin)
         {
             Console.WriteLine($"welcome to our ATM Admin {isAuthenticated.HolderName}");
-            await adminView.show();
+            await adminView.Show();
         }
 else if(isAuthenticated.Role==UserRole.Client){
     Console.WriteLine($"Welcome client{isAuthenticated.HolderName}");
+    await clientView.Show(isAuthenticated);
 }
 else{
     Console.WriteLine("exiting .....");
@@ -82,5 +89,13 @@ else{
        
 
        Console.ReadLine();
+    } 
+    
+    
+    
+    catch(Exception ex){
+        Console.WriteLine(ex.Message);
+
+    }
     }
 }

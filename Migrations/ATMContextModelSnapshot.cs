@@ -131,8 +131,7 @@ namespace ATMApp.Migrations
 
             modelBuilder.Entity("ATMApp.Models.User", b =>
                 {
-                    b.Navigation("Account")
-                        .IsRequired();
+                    b.Navigation("Account");
                 });
 #pragma warning restore 612, 618
         }
