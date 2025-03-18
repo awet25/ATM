@@ -1,9 +1,7 @@
 
 using ATMApp.Interfaces;
 using ATMApp.Models;
-using Microsoft.CodeAnalysis.CSharp.Syntax;
-using System;
-using System.Threading.Tasks;
+using System.Threading.Tasks;   
 namespace ATMApp.Services{
 
     public class ClientService :IClientService
@@ -15,7 +13,7 @@ namespace ATMApp.Services{
         _transactionRepository=transactionRepository;
 
         }
-        public async Task<bool> Deposit(int accountId, decimal amount)
+        public async Task<bool> Deposit(int ClientId, decimal amount)
          {
             if (amount <= 0)
             {
@@ -23,7 +21,7 @@ namespace ATMApp.Services{
                 return false;
             }
 
-            var account = await _accountRepository.GetAccountById(accountId);
+            var account = await _accountRepository.GetAccountByClientID(ClientId);
             if (account == null)
             {
                 Console.WriteLine("Account not found.");
@@ -34,26 +32,37 @@ namespace ATMApp.Services{
 
             var transaction = new Transaction
             {
-                AccountId = accountId,
+                AccountId = account.Id,
                 Amount = amount,
                 type = TransactionType.Deposit
             };
             await _transactionRepository.AddTransaction(transaction);
 
-            Console.WriteLine($"Deposit successful! New balance: {account.IntialBalance}");
+            
+            Console.WriteLine($" Cash Deposited Successfully ");
+            Console.WriteLine($"Account #{account.Id}");
+            Console.WriteLine($"Date:{DateTime.Now.ToString("MM/dd/yyyy")}");
+            Console.WriteLine($"Deposited : {amount}");
+            Console.WriteLine($"Balanace :{account.IntialBalance:F2}");
+
             return true;
         }
 
-        public async Task<decimal> GetBalance(int accountId)
+        public async Task  GetBalance(int ClientId)
         {
-           var account = await _accountRepository.GetAccountById(accountId);
+           var account = await _accountRepository.GetAccountByClientID(ClientId);
            if(account == null)
            {
             Console.WriteLine("Account not found.");
-            return -1;
+            
            }
-           Console.WriteLine($"Current Balance: {account.IntialBalance}");
-           return account.IntialBalance;
+           else{
+             Console.WriteLine(" Account Info");
+            Console.WriteLine($"Account #{account.Id}");
+            Console.WriteLine($"Date:{DateTime.Now.ToString("MM/dd/yyyy")}");
+            Console.WriteLine($"Balanace :{account.IntialBalance:F2}");
+           }
+           
         }
 
         public async Task<List<Transaction>> GetTransactionHistory(int accountId)
@@ -61,16 +70,13 @@ namespace ATMApp.Services{
             return await _transactionRepository.GetTransactionsByAccountId(accountId);
         }
 
-        public async  Task<bool> Withdraw(int accountId, decimal amount)
+        public async  Task<bool> Withdraw(int ClientID, decimal amount)
         {
-            if (amount<=0){
-                Console.WriteLine("Withdrawal amount must be greater than zero");
-                return false;
-            }
-            var account = await _accountRepository.GetAccountById(accountId);
+           
+            var account = await _accountRepository.GetAccountByClientID(ClientID);
             if(account==null)
             {
-                Console.WriteLine($"Account {accountId} does not exist");
+                Console.WriteLine($"Client {ClientID} does not exist");
                 return false;
             }
             if(account.IntialBalance < amount)
@@ -81,15 +87,19 @@ namespace ATMApp.Services{
             account.IntialBalance-=amount;
             await _accountRepository.UpdateAccount(account);
             var transaction= new Transaction{
-                AccountId=accountId,
+                AccountId=account.Id,
                 Amount=amount,
                 type=TransactionType.Withdrawal
             };
             await _transactionRepository.AddTransaction(transaction);
-            Console.WriteLine($"Withdrawal successful! New balance: {account.IntialBalance} .");
+            Console.WriteLine($" Cash Successfully Withdrawn ");
+            Console.WriteLine($"Account #{account.Id}");
+            Console.WriteLine($"Date:{DateTime.Now.ToString("MM/dd/yyyy")}");
+            Console.WriteLine($"Withdrawn : {amount}");
+            Console.WriteLine($"Balanace :{account.IntialBalance:F2}");
         return true;
         }
 
-       
+        
     }
 }

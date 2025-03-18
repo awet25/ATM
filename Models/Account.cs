@@ -11,7 +11,7 @@ public class Account{
     }
 public enum AccountStatus{
     Active,
-    Inactive
+    Disabled
 }
 
 }

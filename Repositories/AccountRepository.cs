@@ -37,10 +37,19 @@ public async Task<Account> GetAccountById(int id)
         
     }
 
-        public async Task UpdateAccount(Account account)
+        public async Task<Account> UpdateAccount(Account account)
         {
-            _context.Account.Update(account);
+           var newaccount=  _context.Account.Update(account);
             await _context.SaveChangesAsync();
+            return account;
+        }
+
+        public async Task<Account> GetAccountByClientID(int ClientId)
+        {
+           var account =await _context.Account
+           .FirstOrDefaultAsync(a=>a.ClientID == ClientId);
+           if(account==null) return null;
+           return account;
         }
     }
 }

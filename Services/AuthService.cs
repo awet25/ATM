@@ -34,15 +34,15 @@ namespace ATMApp.Services
             
        var user =await _userRepository.GetUserBylogin(userLogin.Login);
        if(user!=null && user.PinCode==userLogin.PinCode){
-        Console.WriteLine($"Login successFul. Welcome {user.HolderName}");
+        
         return user;
        }
-       Console.WriteLine("Invalid login credentials.");
+      
        return null;
      }
      public void Exit(){
         Console.WriteLine("User Logged out.");
-        Environment.Exit(0);
+        return;
      }
 
         

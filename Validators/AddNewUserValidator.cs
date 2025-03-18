@@ -19,6 +19,10 @@ namespace ATMApp.Validators{
 
             RuleFor(user => user.Role)
                 .IsInEnum().WithMessage("Invalid role. Choose either 'Admin' or 'Client'.");
+
+
+            RuleFor(user=>user.status).IsInEnum().WithMessage("Invalid status. Choose either 'Active','Inactive'");
         }
+    
     }
 }
