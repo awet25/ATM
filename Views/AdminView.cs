@@ -78,7 +78,7 @@ public class AdminView
 
     public async Task<bool> DeleteAccount(){
         int Id;
-        Console.WriteLine("Enter Id for the client you want to delete");
+        Console.WriteLine("Enter Id for the Account you want to delete");
         Id=Int32.Parse(Console.ReadLine());
         
         
@@ -90,25 +90,29 @@ public async Task<bool> UpdateAccount(){
    return await _adminServices.UpdateUser(updateduser);
 }
 public async Task SearchForAccount(){
-    string login="";
-    Console.WriteLine("Enter Login to look for user and account useing login");
-    login=Console.ReadLine();
-    var user= await _adminServices.GetUserByLogin(login);
-    if(user==null){
-     Console.WriteLine("sorry account not found");
-     
+    string stringId="";
+    int id;
+    Console.WriteLine("Enter Account ID to look for account ");
+    stringId=Console.ReadLine();
+    while(!int.TryParse(stringId, out id)||id<=0){
+        Console.WriteLine("Invalid Input please enter a valid Id");
+       stringId=Console.ReadLine(); 
+
     }
-    Console.WriteLine("+----------------+----------------+---------+---------------+----------------+------------+");
-    Console.WriteLine("| Holder Name    | Login          | Role    | Account No    | Balance        | Status     |");
-    Console.WriteLine("+----------------+----------------+---------+---------------+----------------+------------+");
+    var account= await _adminServices.GetAccount(id);
+    if(account==null){
+     Console.WriteLine("sorry account not found");
+     return ;
+    }
+    Console.WriteLine("The Account information is :");
+    Console.WriteLine($"Account # {account.Id}");
+    Console.WriteLine($"Holder:  {account.User.HolderName}");
+    Console.WriteLine($"Balance: {account.IntialBalance}");
+    Console.WriteLine($"Status: {account.status}");
+    Console.WriteLine($"Login: {account.User.Login}");
+     Console.WriteLine($"Pin Code: {account.User.PinCode}");
 
-  
-    Console.WriteLine($"| {user.HolderName,-14} | {user.Login,-14} | {user.Role,-7} | " +
-                      $"{(user.Account != null ? user.Account.Id : "N/A"),-13} | " +
-                      $"{(user.Account != null ? user.Account.IntialBalance.ToString("C") : "N/A"),-14} | " +
-                      $"{(user.Account != null ? user.Account.status.ToString() : "N/A"),-10} |");
 
-    Console.WriteLine("+----------------+----------------+---------+---------------+----------------+------------+");
 
 }
 
@@ -119,6 +123,9 @@ public static CreateUserDto HandleCreateUserInput(){
 
 string login, pinCode, holderName;
     UserRole userRole;
+    AccountStatus accountStatus;
+    decimal balance=0;
+
    
  Console.Write("Enter account Holder Name: ");
     holderName = Console.ReadLine();
@@ -144,7 +151,25 @@ string login, pinCode, holderName;
         pinCode = Console.ReadLine();
     }
 
-    Console.WriteLine("Select Account Role:");
+    
+ Console.WriteLine("Select Status of Account :");
+    foreach (var stats in Enum.GetNames(typeof(AccountStatus)))
+    {
+        Console.WriteLine($"- {stats}");
+    }
+
+Console.Write("Enter status: ");
+    string stringStatus = Console.ReadLine();
+    while (!Enum.TryParse(stringStatus, out AccountStatus parseStatus) || !Enum.IsDefined(typeof(AccountStatus), parseStatus))
+    {
+        Console.WriteLine("Invalid choice. Please select a valid role:");
+        stringStatus = Console.ReadLine();
+    }
+    accountStatus = (AccountStatus)Enum.Parse(typeof(AccountStatus), stringStatus);
+
+
+
+Console.WriteLine("Select Account Role:");
     foreach (var role in Enum.GetNames(typeof(UserRole)))
     {
         Console.WriteLine($"- {role}");
@@ -157,6 +182,17 @@ string login, pinCode, holderName;
         Console.WriteLine("Invalid choice. Please select a valid role:");
         stringRole = Console.ReadLine();
     }
+
+      Console.WriteLine("Enter balance");
+      string stringBalance= Console.ReadLine();
+      while(!decimal.TryParse(stringBalance, out balance)||balance< 0)
+      {
+        Console.WriteLine("Enter balance");
+        stringBalance = Console.ReadLine();
+      }
+
+
+
     userRole = (UserRole)Enum.Parse(typeof(UserRole), stringRole);
 
     return new CreateUserDto
@@ -164,7 +200,8 @@ string login, pinCode, holderName;
         HolderName = holderName,
         Login = login,
         PinCode = pinCode,
-        Role = userRole
+        Role = userRole,
+        status=accountStatus,
     };
    
 
@@ -174,12 +211,12 @@ string login, pinCode, holderName;
 public static UpdateUserDto HandleInputToUpudate()
 {
     string login=null,pinCode=null,holderName=null;
-    UserRole? userRole=null;
-    int clientId=0;
-     Console.Write("Enter Client ID to update: ");
-    while (!int.TryParse(Console.ReadLine(), out clientId) || clientId <= 0)
+    AccountStatus? accountStatus=null;
+    int accountId=0;
+     Console.Write("Enter Account ID to update: ");
+    while (!int.TryParse(Console.ReadLine(), out accountId) || accountId <= 0)
     {
-        Console.WriteLine("Invalid ID. Please enter a valid Client ID:");
+        Console.WriteLine("Invalid ID. Please enter a valid Account ID:");
     }
 
     if (AskUserToEdit("Holder Name"))
@@ -206,34 +243,34 @@ public static UpdateUserDto HandleInputToUpudate()
         }
     }
 
-    if (AskUserToEdit("Role"))
+    if (AskUserToEdit("Status"))
     {
-        Console.WriteLine("Select Account Role (Leave blank to keep current):");
-        foreach (var role in Enum.GetNames(typeof(UserRole)))
+        Console.WriteLine("Select Account status (Leave blank to keep current):");
+        foreach (var status in Enum.GetNames(typeof(AccountStatus)))
         {
-            Console.WriteLine($"- {role}");
+            Console.WriteLine($"- {status}");
         }
 
-        Console.Write("Enter role: ");
-        string stringRole = Console.ReadLine();
-        if (!string.IsNullOrEmpty(stringRole))
+        Console.Write("Enter status: ");
+        string stringStatus = Console.ReadLine();
+        if (!string.IsNullOrEmpty(stringStatus))
         {
-            while (!Enum.TryParse(stringRole, out UserRole parsedRole) || !Enum.IsDefined(typeof(UserRole), parsedRole))
+            while (!Enum.TryParse(stringStatus, out AccountStatus parsedStatus) || !Enum.IsDefined(typeof(AccountStatus), parsedStatus))
             {
                 Console.WriteLine("Invalid choice. Please select a valid role:");
-                stringRole = Console.ReadLine();
+                stringStatus = Console.ReadLine();
             }
-            userRole = (UserRole)Enum.Parse(typeof(UserRole), stringRole);
+            accountStatus = (AccountStatus)Enum.Parse(typeof(AccountStatus), stringStatus);
         }
     }
 
     return new UpdateUserDto
     {
-        ClientId = clientId,
+        Id = accountId,
         HolderName = string.IsNullOrEmpty(holderName) ? null : holderName,
         Login = string.IsNullOrEmpty(login) ? null : login,
         PinCode = string.IsNullOrEmpty(pinCode) ? null : pinCode,
-        Role = userRole ?? default(UserRole)
+        status = accountStatus ?? default
     };
 }
 

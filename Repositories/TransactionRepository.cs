@@ -4,7 +4,7 @@ using ATMApp.Data;
 using ATMApp.Interfaces;
 using Microsoft.EntityFrameworkCore;
 using ATMApp.Models;
-using Microsoft.EntityFrameworkCore.Metadata.Internal;
+
 
 namespace ATMApp.Repositories
 {
@@ -19,6 +19,7 @@ namespace ATMApp.Repositories
         {
             await _context.Transactions.AddAsync(transaction);
             await _context.SaveChangesAsync();
+            
         }
 
 
@@ -26,7 +27,7 @@ namespace ATMApp.Repositories
         {
           return await _context.Transactions
                 .Where(t => t.AccountId == accountId)
-                .ToListAsync();  
+                .ToListAsync()?? new List<Models.Transaction>();  
         }
     }
 }

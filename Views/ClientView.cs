@@ -17,7 +17,7 @@ namespace ATMApp.Views{
         while (true)
         {
               {
-                Console.WriteLine("\nClient Menu:");
+                Console.WriteLine("Client Menu:");
                 Console.WriteLine("1 - Withdraw cash ");
                 Console.WriteLine("2 - Deposit Cash");
                 Console.WriteLine("3 - Display Balance");
@@ -61,20 +61,44 @@ namespace ATMApp.Views{
 
 
        public async Task DisplayAccount(User user)
-       {
+       {  
+        if(user.Account.status.Equals(AccountStatus.Disabled)){
+            Console.WriteLine("Sorry this account was disabled by admin. please visit our office or give as a call");
+            return;
+        }
         await _clientService.GetBalance(user.Id);
        }
 
       public async Task WithdrawMoney(User user)
+
       {
-        Console.WriteLine("Enter amount to withdraw from your account");
-        decimal amount=decimal.Parse(Console.ReadLine());
-        await _clientService.Withdraw(user.Id,amount);
+
+         if(user.Account.status.Equals(AccountStatus.Disabled)){
+            Console.WriteLine("Sorry this account was disabled by admin. please visit our office or give as a call");
+            return;
+        }
+
+        decimal amount;
+        Console.WriteLine("Enter the amount you want to withdraw");
+        string input=Console.ReadLine();
+
+       while (!decimal.TryParse(input, out amount)|| amount<=0)
+    {
+        Console.WriteLine("Invalid input please enter a valid amount greater than 0.");
+        input=Console.ReadLine();
+    }
+
+         await _clientService.Withdraw(user.Id,amount);
       }
 
      
        public async Task Deposite(User user)
        {
+
+        if(user.Account.status.Equals(AccountStatus.Disabled)){
+            Console.WriteLine("Sorry this account was disabled by admin. please visit our office or give as a call");
+            return;
+        }
         Console.WriteLine("Enter amount you want to deposite");
         decimal amount=decimal.Parse(Console.ReadLine());
 
@@ -85,16 +109,6 @@ namespace ATMApp.Views{
        {
         _authService.Exit();
        }
-
-
-
-
-
-
-
-
-
-
 
 
     }

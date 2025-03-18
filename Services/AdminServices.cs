@@ -15,12 +15,15 @@ public class AdminServices:IAdminservices
     private readonly IUserRepository _userRepository;
     private readonly ATMContext _context;
     private readonly IAccountRepository _accountRepository;
+    private readonly ITransactionRepository _transactionRepository;
     private readonly IValidator<CreateUserDto> _userValidator;
-    public AdminServices(ATMContext aTMContext, IUserRepository userRepository,IAccountRepository accountRepository ,IValidator<CreateUserDto> userValidator){
+    public AdminServices(ATMContext aTMContext, IUserRepository userRepository,
+    ITransactionRepository transactionRepository ,IAccountRepository accountRepository ,IValidator<CreateUserDto> userValidator){
         _context=aTMContext;
         _userRepository = userRepository;
         _userValidator = userValidator;
         _accountRepository=accountRepository;
+        _transactionRepository=transactionRepository;
     }
     
    public async Task<bool> AddUser(CreateUserDto userDto){
@@ -51,8 +54,8 @@ public class AdminServices:IAdminservices
    if (createdUser.Role== UserRole.Client){
       var account=new Account{
     ClientID=createdUser.Id,
-   status=AccountStatus.Active,
-   IntialBalance=0.0m
+   status=userDto.status,
+   IntialBalance=userDto.IntialBalance
     
    };
      var createdAccount= await _accountRepository.CreateAccount(account);
@@ -61,47 +64,109 @@ public class AdminServices:IAdminservices
     return false;
    }
      
-    Console.WriteLine($"user : {newUser.HolderName} successfully created with {newUser.Role}");
+    Console.WriteLine($"Account successfully created- the account number assigned is :{createdAccount.Id}");
     return true;
    }
  return false;
  
    }
 
-        public async Task<bool> DeleteUserAndAccount(int userId)
+       public async Task<bool> DeleteUserAndAccount(int accountId)
+{
+    using var transaction = await _context.Database.BeginTransactionAsync();
+    try
+    {
+        
+        var account = await _accountRepository.GetAccountById(accountId);
+        if (account == null)
         {
-         using var transaction= await _context.Database.BeginTransactionAsync();
-         try{
-          var user= await _userRepository.GetUserById(userId);
-          if (user==null)
-          {
-            Console.WriteLine($"User {userId} does not exist");
+            Console.WriteLine("Account not found. Please check the account number and try again.");
+            await transaction.RollbackAsync();
             return false;
-          }
-          var account= await _accountRepository.GetAccountById(userId);
-          if(account!=null){
-            var accountDeleted=await _accountRepository.DeleteAccountById(userId);
-            if(!accountDeleted){
-              Console.WriteLine("Failed to delete account.");
-              return false;
-            }
-          }
-          var userDeleted=await _userRepository.DeleteUserbyId(userId);
-          if(!userDeleted){
-            Console.WriteLine("Failed to delete User");
-            return false;
-          }
-          await transaction.CommitAsync();
-          Console.WriteLine($"Client {user.HolderName}and their account were successfully deleted.");
-          return true;
-         }
-
-         catch(Exception ex){
-         await transaction.RollbackAsync();
-         Console.WriteLine($"Error: {ex.Message}");
-         return false;
-         }
         }
+
+        int clientId = account.ClientID;
+
+        
+        var user = await _userRepository.GetUserById(clientId);
+        if (user == null)
+        {
+            Console.WriteLine("Associated user not found. Aborting deletion.");
+            await transaction.RollbackAsync();
+            return false;
+        }
+
+      
+        Console.WriteLine($"You are about to delete the account held by {user.HolderName}.");
+        Console.Write($"If this information is correct, please re-enter the account number ({account.Id}): ");
+        
+        string input = Console.ReadLine();
+        int inputAgain;
+        
+        while (!int.TryParse(input, out inputAgain) || inputAgain <= 0)
+        {
+            Console.WriteLine("Invalid input! Please enter a valid account number.");
+            input = Console.ReadLine();
+        }
+
+        if (inputAgain != accountId)
+        {
+            Console.WriteLine("Account number confirmation failed. Deletion aborted.");
+            await transaction.RollbackAsync();
+            return false;
+        }
+
+       
+        var transactions = await _transactionRepository.GetTransactionsByAccountId(accountId);
+        if (transactions.Any())
+        {
+            _context.Transactions.RemoveRange(transactions);
+            await _context.SaveChangesAsync(); 
+                    }
+
+       
+        bool accountDeleted = await _accountRepository.DeleteAccountById(accountId);
+        if (!accountDeleted)
+        {
+            Console.WriteLine("Failed to delete account. Rolling back transaction.");
+            await transaction.RollbackAsync();
+            return false;
+        }
+
+    
+        bool userDeleted = await _userRepository.DeleteUserbyId(clientId);
+        if (!userDeleted)
+        {
+            Console.WriteLine("Failed to delete user. Rolling back transaction.");
+            await transaction.RollbackAsync();
+            return false;
+        }
+
+        await transaction.CommitAsync();
+        Console.WriteLine($"User {user.HolderName}, account {accountId}, and related transactions were successfully deleted.");
+        return true;
+    }
+    catch (Exception ex)
+    {
+        await transaction.RollbackAsync();
+    Console.WriteLine($"Error: {ex.Message}");
+        return false;
+    }
+}
+
+
+        public async Task<Account> GetAccount(int id)
+        {
+           var existingAccount=await _context.Account.Include(a=>a.User)
+           .FirstOrDefaultAsync(a=>a.Id==id);
+           if(existingAccount==null){
+            Console.WriteLine("Account don't exist");
+            return null;
+           } 
+           return existingAccount;
+        }
+
+       
 
         public async Task<User> GetUserByLogin(string login)
         {
@@ -116,39 +181,80 @@ public class AdminServices:IAdminservices
 
         public async Task<bool> UpdateUser(UpdateUserDto updateUserDto)
         {
-          try{
-            var user= await _userRepository.GetUserById(updateUserDto.ClientId);
-            if (user==null)
+          using var transaction = await _context.Database.BeginTransactionAsync();
+    try
+    {
+        
+        var account = await _accountRepository.GetAccountById(updateUserDto.Id);
+        if (account == null)
+        {
+            Console.WriteLine("Account not found.");
+            await transaction.RollbackAsync();
+            return false;
+        }
+
+        
+        var user = await _userRepository.GetUserById(account.ClientID);
+        if (user == null)
+        {
+            Console.WriteLine("User not found.");
+            await transaction.RollbackAsync();
+            return false;
+        }
+
+        
+        if (!string.IsNullOrEmpty(updateUserDto.HolderName))
+        {
+            user.HolderName = updateUserDto.HolderName;
+        }
+        if (!string.IsNullOrEmpty(updateUserDto.Login))
+        {
+            user.Login = updateUserDto.Login;
+        }
+        if (!string.IsNullOrEmpty(updateUserDto.PinCode))
+        {
+            if (updateUserDto.PinCode.Length != 5)
             {
-              Console.WriteLine("User not found");
-              return false;
-            }
-            if (!string.IsNullOrEmpty(updateUserDto.HolderName)){
-              user.HolderName = updateUserDto.HolderName;
-            }
-             if (!string.IsNullOrEmpty(updateUserDto.Login)){
-              user.Login = updateUserDto.Login;
-            }
-             if (!string.IsNullOrEmpty(updateUserDto.PinCode)){
-              if (updateUserDto.PinCode.Length !=5){
-                  Console.WriteLine("PinCode must be exactly 5 characters long.");
+                Console.WriteLine("PinCode must be exactly 5 characters long.");
+                await transaction.RollbackAsync();
                 return false;
-              }
-              user.PinCode = updateUserDto.PinCode;
             }
-           var updatedUser= await _userRepository.UpdateUser(user);
-           if (!updatedUser){
-            Console.WriteLine("Failed to Update Client.");
+            user.PinCode = updateUserDto.PinCode;
+        }
+
+        
+        var updatedUser = await _userRepository.UpdateUser(user);
+        if (!updatedUser)
+        {
+            Console.WriteLine("Failed to update user.");
+            await transaction.RollbackAsync();
             return false;
-           }
-           Console.WriteLine($"Client {user.HolderName} was successfully update .");
-           return true;
-           
-          } 
-          catch(Exception ex){
-            Console.WriteLine($"Error updating user:{ex.Message}");
-            return false;
-          } 
+        }
+
+        
+        if (updateUserDto.status != null)
+        {
+          account.status=updateUserDto.status.Value;
+            
+            var updatedAccount = await _accountRepository.UpdateAccount(account);
+            if (updatedAccount==null)
+            {
+                Console.WriteLine("Failed to update account status.");
+                await transaction.RollbackAsync();
+                return false;
+            }
+        }
+
+        await transaction.CommitAsync();
+        Console.WriteLine($"User {user.HolderName} and account {account.Id} were successfully updated.");
+        return true;
+    }
+    catch (Exception ex)
+    {
+        await transaction.RollbackAsync();
+        Console.WriteLine($"Error updating user and account: {ex.Message}");
+        return false;
+    }
         }
     }
 
