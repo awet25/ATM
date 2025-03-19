@@ -50,8 +50,15 @@ public class AdminServices:IAdminservices
    if(createdUser==null)
    {
     Console.WriteLine("Failed to create User");
+    return false;
    }
-   if (createdUser.Role== UserRole.Client){
+   else if (createdUser.Role==UserRole.Admin){
+     Console.WriteLine($"Account successfully created- the account number assigned is :{createdUser.Id}");
+    return true;
+
+   }
+
+   else if (createdUser.Role== UserRole.Client){
       var account=new Account{
     ClientID=createdUser.Id,
    status=userDto.status,

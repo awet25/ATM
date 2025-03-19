@@ -62,10 +62,7 @@ namespace ATMApp.Views{
 
        public async Task DisplayAccount(User user)
        {  
-        if(user.Account.status.Equals(AccountStatus.Disabled)){
-            Console.WriteLine("Sorry this account was disabled by admin. please visit our office or give as a call");
-            return;
-        }
+     
         await _clientService.GetBalance(user.Id);
        }
 
@@ -73,10 +70,7 @@ namespace ATMApp.Views{
 
       {
 
-         if(user.Account.status.Equals(AccountStatus.Disabled)){
-            Console.WriteLine("Sorry this account was disabled by admin. please visit our office or give as a call");
-            return;
-        }
+        
 
         decimal amount;
         Console.WriteLine("Enter the amount you want to withdraw");
@@ -94,11 +88,6 @@ namespace ATMApp.Views{
      
        public async Task Deposite(User user)
        {
-
-        if(user.Account.status.Equals(AccountStatus.Disabled)){
-            Console.WriteLine("Sorry this account was disabled by admin. please visit our office or give as a call");
-            return;
-        }
         Console.WriteLine("Enter amount you want to deposite");
         decimal amount=decimal.Parse(Console.ReadLine());
 
