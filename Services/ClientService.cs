@@ -27,6 +27,11 @@ namespace ATMApp.Services{
                 Console.WriteLine("Account not found.");
                 return false;
             }
+            
+             if (account.status.Equals(AccountStatus.Disabled)){
+                Console.WriteLine("Sorry this Account was Disabled pls visit our office or call us");
+                return false;
+            }
               account.IntialBalance+=amount;
             await _accountRepository.UpdateAccount(account);
 
@@ -55,7 +60,11 @@ namespace ATMApp.Services{
            {
             Console.WriteLine("Account not found.");
             
-           }
+           } 
+            else if (account.status.Equals(AccountStatus.Disabled)){
+                Console.WriteLine("Sorry this Account was Disabled pls visit our office or call us");
+                return;
+            }
            else{
              Console.WriteLine(" Account Info");
             Console.WriteLine($"Account #{account.Id}");
@@ -77,6 +86,10 @@ namespace ATMApp.Services{
             if(account==null)
             {
                 Console.WriteLine($"Client {ClientID} does not exist");
+                return false;
+            } 
+             else if (account.status.Equals(AccountStatus.Disabled)){
+                Console.WriteLine("Sorry this Account was Disabled pls visit our office or call us");
                 return false;
             }
             if(account.IntialBalance < amount)
